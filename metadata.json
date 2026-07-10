@@ -1,0 +1,6 @@
+{
+  "name": "Calculator",
+  "description": "A beautiful, premium scientific calculator built with Jetpack Compose and local history logging.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
