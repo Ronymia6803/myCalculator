@@ -1,0 +1,66 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout codebase using Node 22+ compatible step
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Set up Java Environment using JDK 21 (Temurin)
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: gradle
+
+    # 3. Handle Local Secrets configuration dynamically
+    - name: Create Empty Env File
+      run: touch .env
+
+    # 4. Generate standard keystore for Android compilation
+    - name: Generate dummy debug keystore
+      run: |
+        if [ -f debug.keystore.base64 ]; then
+          echo "Decoding existing debug.keystore.base64..."
+          base64 -d debug.keystore.base64 > debug.keystore
+        else
+          echo "Generating a new standard debug keystore..."
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        fi
+
+    # 5. Normalize Gradle execution line endings (critical for Windows/Unix compatibility)
+    - name: Fix Line Endings in Gradlew
+      run: |
+        find . -name "gradlew" -exec sed -i 's/\r$//' {} + || true
+
+    # 6. Apply execute permissions to Gradle wrapper
+    - name: Find and setup gradlew
+      run: find . -name "gradlew" -exec chmod +x {} + || true
+
+    # 7. Assemble the debug APK
+    - name: Build Debug APK
+      run: |
+        if [ -f "gradlew" ]; then
+          ./gradlew assembleDebug --no-daemon
+        elif [ -d "android" ] && [ -f "android/gradlew" ]; then
+          cd android && ./gradlew assembleDebug --no-daemon
+        else
+          gradle assembleDebug --no-daemon
+        fi
+
+    # 8. Upload the compiled APK using Node 22+ compatible step
+    - name: Upload Calculator APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: calculator-app-${{ github.run_number }}
+        path: '**/*.apk'
+        overwrite: true
