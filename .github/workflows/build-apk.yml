@@ -33,6 +33,15 @@ jobs:
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
         fi
 
+    - name: Download clean Gradle wrapper jar
+      run: |
+        mkdir -p gradle/wrapper
+        echo "Downloading clean gradle-wrapper.jar..."
+        curl -sSLo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.7.0/gradle/wrapper/gradle-wrapper.jar || {
+          echo "Download failed, regenerating wrapper via system gradle..."
+          gradle wrapper --gradle-version 8.7
+        }
+
     - name: Fix Line Endings in Gradlew
       run: |
         find . -name "gradlew" -exec sed -i 's/\r$//' {} + || true
